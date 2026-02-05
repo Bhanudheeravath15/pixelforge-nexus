@@ -1,8 +1,18 @@
 from flask import Flask, render_template, redirect, url_for, request, flash
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from flask_login import (
+    LoginManager,
+    UserMixin,
+    login_user,
+    logout_user,
+    login_required,
+    current_user,
+)
 from flask_bcrypt import Bcrypt
 
+# -------------------------
+# APP CONFIG
+# -------------------------
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "pixelforge-secret-key"
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///pixelforge.db"
@@ -16,17 +26,27 @@ login_manager.login_view = "login"
 login_manager.init_app(app)
 
 # -------------------------
-# USER MODEL
+# MODELS
 # -------------------------
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
-    role = db.Column(db.String(50), nullable=False)
+    role = db.Column(db.String(50), nullable=False)  # admin / lead / developer
+
+
+class Project(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(150), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    deadline = db.Column(db.String(50), nullable=False)
+    status = db.Column(db.String(20), default="Active")  # Active / Completed
+
 
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+
 
 # -------------------------
 # ROUTES
@@ -34,6 +54,7 @@ def load_user(user_id):
 @app.route("/")
 def home():
     return redirect(url_for("login"))
+
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -47,14 +68,72 @@ def login():
             login_user(user)
             return redirect(url_for("dashboard"))
         else:
-            flash("Invalid credentials")
+            flash("Invalid username or password")
 
     return render_template("login.html")
+
 
 @app.route("/dashboard")
 @login_required
 def dashboard():
-    return f"Welcome {current_user.username}! Role: {current_user.role}"
+    if current_user.role == "admin":
+        projects = Project.query.all()
+        return render_template(
+            "admin_dashboard.html",
+            projects=projects
+        )
+
+    elif current_user.role == "lead":
+        return render_template("lead_dashboard.html")
+
+    elif current_user.role == "developer":
+        return render_template("developer_dashboard.html")
+
+    return "Unauthorized access", 403
+
+
+@app.route("/create_project", methods=["GET", "POST"])
+@login_required
+def create_project():
+    if current_user.role != "admin":
+        return "Access denied", 403
+
+    if request.method == "POST":
+        name = request.form.get("name")
+        description = request.form.get("description")
+        deadline = request.form.get("deadline")
+
+        project = Project(
+            name=name,
+            description=description,
+            deadline=deadline,
+        )
+
+        db.session.add(project)
+        db.session.commit()
+        flash("Project created successfully")
+
+        return redirect(url_for("dashboard"))
+
+    return render_template("create_project.html")
+
+
+# -------------------------
+# STEP 3 — MARK PROJECT COMPLETED (ADMIN ONLY)
+# -------------------------
+@app.route("/complete_project/<int:project_id>")
+@login_required
+def complete_project(project_id):
+    if current_user.role != "admin":
+        return "Access denied", 403
+
+    project = Project.query.get_or_404(project_id)
+    project.status = "Completed"
+    db.session.commit()
+
+    flash("Project marked as completed")
+    return redirect(url_for("dashboard"))
+
 
 @app.route("/logout")
 @login_required
@@ -62,6 +141,9 @@ def logout():
     logout_user()
     return redirect(url_for("login"))
 
+
+# -------------------------
+# MAIN
+# -------------------------
 if __name__ == "__main__":
     app.run(debug=True)
-

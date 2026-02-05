@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Dashboard</title>
+</head>
+<body>
+    <h1>Admin Dashboard</h1>
+    <p>Welcome, Admin!</p>
+
+    <h3>Projects</h3>
+
+    {% if projects %}
+        <ul>
+        {% for project in projects %}
+            <li>
+                <strong>{{ project.name }}</strong><br>
+                Description: {{ project.description }}<br>
+                Deadline: {{ project.deadline }}<br>
+                Status: {{ project.status }}
+
+                {% if project.status != "Completed" %}
+                    | <a href="/complete_project/{{ project.id }}">
+                        Mark Completed
+                      </a>
+                {% endif %}
+            </li>
+            <br>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>No projects created yet.</p>
+    {% endif %}
+
+    <hr>
+
+    <ul>
+        <li><a href="/create_project">Create Project</a></li>
+        <li>Manage Users</li>
+    </ul>
+
+    <br>
+    <a href="/logout">Logout</a>
+</body>
+</html>
+
