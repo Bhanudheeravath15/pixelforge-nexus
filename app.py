@@ -118,9 +118,6 @@ def create_project():
     return render_template("create_project.html")
 
 
-# -------------------------
-# STEP 3 — MARK PROJECT COMPLETED (ADMIN ONLY)
-# -------------------------
 @app.route("/complete_project/<int:project_id>")
 @login_required
 def complete_project(project_id):
@@ -131,7 +128,6 @@ def complete_project(project_id):
     project.status = "Completed"
     db.session.commit()
 
-    flash("Project marked as completed")
     return redirect(url_for("dashboard"))
 
 
@@ -141,9 +137,12 @@ def logout():
     logout_user()
     return redirect(url_for("login"))
 
+
+# -------------------------
+# TEMP ADMIN INIT (USE ONCE ON RENDER)
+# -------------------------
 @app.route("/init-admin")
 def init_admin():
-    from app import db, User
     user = User.query.filter_by(username="admin").first()
     if user:
         return "Admin already exists"
@@ -158,9 +157,11 @@ def init_admin():
     db.session.commit()
     return "Admin created successfully"
 
+
 # -------------------------
 # MAIN
 # -------------------------
 if __name__ == "__main__":
+    with app.app_context():
+        db.create_all()
     app.run(host="0.0.0.0", port=10000)
-
