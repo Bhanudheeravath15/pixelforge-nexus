@@ -141,22 +141,23 @@ def logout():
 # -------------------------
 # TEMP ADMIN INIT (USE ONCE ON RENDER)
 # -------------------------
-@app.route("/init-admin")
-def init_admin():
-    user = User.query.filter_by(username="admin").first()
-    if user:
+@app.route("/setup-admin")
+def setup_admin():
+    if User.query.first():
         return "Admin already exists"
 
-    hashed_pw = bcrypt.generate_password_hash("admin123").decode("utf-8")
+    hashed_password = bcrypt.generate_password_hash("admin123").decode("utf-8")
+
     admin = User(
         username="admin",
-        password=hashed_pw,
+        password=hashed_password,
         role="admin"
     )
+
     db.session.add(admin)
     db.session.commit()
-    return "Admin created successfully"
 
+    return "Admin user created successfully"
 
 # -------------------------
 # MAIN
