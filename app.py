@@ -144,17 +144,19 @@ def logout():
 @app.route("/init-admin")
 def init_admin():
     from app import db, User
-    existing = User.query.filter_by(username="admin").first()
-    if existing:
+    user = User.query.filter_by(username="admin").first()
+    if user:
         return "Admin already exists"
 
     hashed_pw = bcrypt.generate_password_hash("admin123").decode("utf-8")
-    admin = User(username="admin", password=hashed_pw, role="admin")
+    admin = User(
+        username="admin",
+        password=hashed_pw,
+        role="admin"
+    )
     db.session.add(admin)
     db.session.commit()
-    return "Admin user created successfully"
-
-
+    return "Admin created successfully"
 
 # -------------------------
 # MAIN
